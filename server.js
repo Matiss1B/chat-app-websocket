@@ -1,95 +1,69 @@
 const express = require("express");
 const http = require("http");
-const WebSocket = require("ws");
+const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = new Server(server);
 
 const names = [
-    "ShadowPulse",
-    "NeonVortex",
-    "FrostByte",
-    "NovaPhantom",
-    "EclipseRush",
-    "CyberRogue",
-    "LunarVenom",
-    "ZeroGravityX",
-    "MysticDrift",
-    "ArcticRebel",
-    "PixelStorm",
-    "NightSpectre",
-    "CosmicBlaze",
-    "SilentChaos",
-    "ThunderNova",
-    "VelvetGhost",
-    "CrimsonOrbit",
-    "DarkVelocity",
-    "QuantumWolf",
-    "VoidHunter"
+    "ShadowPulse","NeonVortex","FrostByte","NovaPhantom",
+    "EclipseRush","CyberRogue","LunarVenom","ZeroGravityX",
+    "MysticDrift","ArcticRebel","PixelStorm","NightSpectre",
+    "CosmicBlaze","SilentChaos","ThunderNova","VelvetGhost",
+    "CrimsonOrbit","DarkVelocity","QuantumWolf","VoidHunter"
 ];
 
 const usedNames = [];
 
 function getAvailableName() {
-    const availableNames = names.filter(name => !usedNames.includes(name));
-    
-    if (availableNames.length === 0) {
+    const available = names.filter(name => !usedNames.includes(name));
+
+    if (available.length === 0) {
         let counter = 1;
-        let newName;
+        let name;
+
         do {
-            newName = `User${counter}`;
-            counter++;
-        } while (usedNames.includes(newName));
-        return newName;
+            name = `User${counter++}`;
+        } while (usedNames.includes(name));
+
+        return name;
     }
-    
-    const randomIndex = Math.floor(Math.random() * availableNames.length);
-    return availableNames[randomIndex];
+
+    return available[Math.floor(Math.random() * available.length)];
 }
 
 app.use(express.static("public"));
 
-wss.on("connection", (ws) => {
-    let name = getAvailableName();
-    usedNames.push(name);
-    
-    console.log(`Jauns lietotājs pieslēdzās: ${name} (Aktīvie: ${usedNames.join(", ")})`);
-    ws.send(JSON.stringify({ type: 'name', name: name }));
+io.on("connection", (socket) => {
 
-    ws.on("message", (message) => {
-        const text = message.toString();
-        try {
-            const data = JSON.parse(text);
-            data.username = name;
-            const broadcastMessage = JSON.stringify(data);
-            wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(broadcastMessage);
-                }
-            });
-        } catch (e) {
-            wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(`${name}: ${text}`);
-                }
-            });
-        }
+    const username = getAvailableName();
+    usedNames.push(username);
+
+    console.log(`${username} pieslēdzās`);
+
+    socket.emit("name", username);
+
+    socket.on("message", (data) => {
+        io.emit("message", {
+            username,
+            text: data.text
+        });
     });
 
-    ws.on("close", () => {
-        console.log(`Lietotājs atvienojās: ${name}`);
-        
-        const index = usedNames.indexOf(name);
+    socket.on("disconnect", () => {
+
+        const index = usedNames.indexOf(username);
+
         if (index !== -1) {
             usedNames.splice(index, 1);
-            console.log(`Vārds "${name}" ir brīvs. Aktīvie: ${usedNames.join(", ")}`);
         }
+
+        console.log(`${username} atvienojās`);
     });
+
 });
 
-const PORT = 3000;
-
-server.listen(PORT, () => {
-    console.log(`Serveris darbojas: http://localhost:${PORT}`);
+server.listen(3000, () => {
+    console.log("http://localhost:3000");
 });
