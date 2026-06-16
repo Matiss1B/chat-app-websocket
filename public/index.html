@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Chat app</title>
+         <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="app">
+            <h1>Chat app</h1>
+            <div id="message-block" class="message-block">         
+            </div>
+            <div class="send-section">
+                <input type="text" id="messageInput" placeholder="Raksti ziņu...">
+                <button onclick="sendMessage(document.getElementById('messageInput').value)">
+                    Sūtīt
+                </button>
+            </div>
+        </div>
+    </body>
+</html>
+<script src="client.js"></script>
