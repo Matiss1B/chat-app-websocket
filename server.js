@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -15,6 +16,9 @@ const names = [
 ];
 
 const usedNames = [];
+const roomTokens = Array.from({ length: 5 }, () => crypto.randomUUID());
+
+
 
 function getAvailableName() {
     const available = names.filter(name => !usedNames.includes(name));
@@ -41,14 +45,25 @@ io.on("connection", (socket) => {
     usedNames.push(username);
 
     console.log(`${username} pieslēdzās`);
+    socket.emit('rooms', roomTokens);
 
     socket.emit("name", username);
 
     socket.on("message", (data) => {
-        io.emit("message", {
+    if (!socket.roomToken) return;
+        io.to(socket.roomToken).emit("message", {
             username,
             text: data.text
         });
+    }); 
+
+   socket.on("join", (token) => {
+        if (socket.roomToken) {
+            socket.leave(socket.roomToken);
+        }
+
+        socket.join(token);
+        socket.roomToken = token;
     });
 
     socket.on("disconnect", () => {
